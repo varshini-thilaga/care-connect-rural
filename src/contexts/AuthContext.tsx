@@ -1,0 +1,44 @@
+import React, { createContext, useContext, useState, ReactNode } from "react";
+import { User, UserRole } from "@/data/types";
+import { mockUsers } from "@/data/mockData";
+
+interface AuthContextType {
+  user: User | null;
+  login: (role: UserRole) => void;
+  logout: () => void;
+  isAuthenticated: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem("hc_user");
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const login = (role: UserRole) => {
+    const u = mockUsers.find((u) => u.role === role);
+    if (u) {
+      setUser(u);
+      localStorage.setItem("hc_user", JSON.stringify(u));
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("hc_user");
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+};
